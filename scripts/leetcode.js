@@ -1,3 +1,5 @@
+const ROOT_DIRECTORY = "yeongrok";
+
 // local storage for question titles
 class LHLocalStorage{
   partitionBaseName = 'lh-storage'; // base name used for partition
@@ -249,7 +251,7 @@ const upload = (
   cb = undefined,
 ) => {
   // To validate user, load user object from GitHub.
-  const URL = `https://api.github.com/repos/${hook}/contents/${directory}/${filename}`;
+  const URL = `https://api.github.com/repos/${hook}/contents/${ROOT_DIRECTORY}/${directory}/${filename}`;
 
   /* Define Payload */
   let data = {
@@ -319,7 +321,7 @@ const update = (
   prepend,
   cb = undefined,
 ) => {
-  const URL = `https://api.github.com/repos/${hook}/contents/${directory}/README.md`;
+  const URL = `https://api.github.com/repos/${hook}/contents/${ROOT_DIRECTORY}/${directory}/README.md`;
 
   /* Read from existing file on GitHub */
   const xhr = new XMLHttpRequest();
