@@ -239,6 +239,28 @@ function findLanguage() {
   return null;
 }
 
+function apiRequest(method, url, jsonData, token) {
+  return new Promise((resolve, reject) => {
+    //load the json file
+    var xhr = new XMLHttpRequest();
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 ){
+          if(xhr.status == 200 || xhr.status == 201) {
+              resolve(xhr.responseText);
+            }
+            else {
+              reject(`${xhr.status} :: ${xhr.responseText}`);
+            }
+        }
+    }
+    xhr.open(method, url, true);
+    xhr.setRequestHeader('Authorization', `token ${token}`);
+    xhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
+    xhr.send(jsonData);
+  })
+};
+
 /* Main function for uploading code to GitHub repo, and callback cb is called if success */
 const upload = (
   token,
@@ -258,6 +280,7 @@ const upload = (
     message: msg,
     content: code,
     sha,
+    branch: directory
   };
 
   data = JSON.stringify(data);
@@ -392,7 +415,7 @@ function uploadGit(
 
               /* to get unique key */
               const filePath = problemName + fileName;
-              chrome.storage.local.get('stats', (s) => {
+              chrome.storage.local.get('stats', async (s) => {
                 const { stats } = s;
                 let sha = null;
 
@@ -403,6 +426,46 @@ function uploadGit(
                 ) {
                   sha = stats.sha[filePath];
                 }
+
+                /* Create branch */
+                const [owner, repo] = hook.split("/");
+                let stringifiedBranches = await apiRequest(
+                  "GET",
+                  `https://api.github.com/repos/${hook}/branches`,
+                  JSON.stringify({
+                    owner,
+                    repo,
+                    headers: {
+                      'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                  }),
+                  token
+                );
+                const branches = JSON.parse(stringifiedBranches);
+                const branchForTheProblem = branches.find(({ name }) =>  name === problemName);
+                if (!branchForTheProblem) {
+                  try {
+                    const [defaultBranch] = branches;
+
+                    await apiRequest(
+                      "POST",
+                      `https://api.github.com/repos/${hook}/git/refs`,
+                      JSON.stringify({
+                        owner,
+                        repo,
+                        ref: `refs/heads/${problemName}`,
+                        sha: defaultBranch.commit.sha,
+                        headers: {
+                          'X-GitHub-Api-Version': '2022-11-28'
+                        }
+                      }),
+                      token
+                    )
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }
+
 
                 if (action === 'upload') {
                   /* Upload to git. */
