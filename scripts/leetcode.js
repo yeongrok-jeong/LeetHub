@@ -445,7 +445,7 @@ function uploadGit(
                 const branchForTheProblem = branches.find(({ name }) =>  name === problemName);
                 if (!branchForTheProblem) {
                   try {
-                    const [defaultBranch] = branches;
+                    const defaultBranch = branches.find(({ name }) =>  name === "master" || name === "main");
 
                     await apiRequest(
                       "POST",
